@@ -15,7 +15,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = cfg.gpu_id
 
 def main():
     # ----------------------- dataset ----------------------- #
-
+    print("Building dataset...")
     data_augment_op = augCompose(transforms=[[RandomColorJitter, 0.5], [RandomBlur, 0.2]])
 
     train_pipline = dataReadPip(transforms=data_augment_op)
@@ -24,7 +24,7 @@ def main():
 
     train_dataset = loadedDataset(readIndex(cfg.train_data_path, shuffle=True), preprocess=train_pipline)
 
-    test_dataset = loadedDataset(readIndex(cfg.test_data_path), preprocess=test_pipline)
+    test_dataset = loadedDataset(readIndex(cfg.val_data_path), preprocess=test_pipline)
 
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=cfg.train_batch_size,
                                                shuffle=True, num_workers=4, drop_last=True)
@@ -33,7 +33,7 @@ def main():
                                              shuffle=False, num_workers=4, drop_last=True)
 
     # -------------------- build trainer --------------------- #
-
+    print("Building trainer...")
     device = torch.device("cuda")
     num_gpu = torch.cuda.device_count()
 
@@ -41,6 +41,7 @@ def main():
     model = torch.nn.DataParallel(model, device_ids=range(num_gpu))
     model.to(device)
 
+    print("Creating trainer...")
     trainer = DeepCrackTrainer(model).to(device)
 
     if cfg.pretrained_model:
@@ -53,7 +54,7 @@ def main():
         trainer.vis.log('load checkpoint: %s' % cfg.pretrained_model, 'train info')
 
     try:
-
+        print("Starting training...")
         for epoch in range(1, cfg.epoch):
             trainer.vis.log('Start Epoch %d ...' % epoch, 'train info')
             model.train()
